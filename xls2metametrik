@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+import sys
+import xlrd
+import json
+
+def null_to_none(s):
+    if s == "":
+        return None
+    return s
+
+def independent_variables(worksheet):
+    for row_num in range(1, worksheet.nrows):
+        row = worksheet.row_values(row_num)
+        assert len(row) == 4
+        yield (row)
+
+def rrs_metadata(worksheet):
+    keys = ["dependent_variable_name",
+            "dependent_variable_description",
+            "r_squared",
+            "sample_size",
+            "model_name",
+            "regression_type"
+            ]
+
+    def answers():
+        for i, row_num in enumerate(range(2, worksheet.nrows)):
+            key = keys[i]
+            row = worksheet.row_values(row_num)
+            value = row[1]
+            yield (key, value)
+
+    return dict([ kv for kv in answers() ])
+
+def get_effects(model, ivs):
+    for iv in ivs:
+        yield {
+            "model_name": model["model_name"],
+            "independent_variable": iv[0],
+            "significance": null_to_none(iv[2]),
+            "standard_error": null_to_none(iv[3])
+            }
+
+def run():
+    _, filename = sys.argv
+
+    workbook = xlrd.open_workbook(filename)
+    sheet_names = workbook.sheet_names()
+
+    required_sheet_names = [u'RegressionResultSet', u'IndependentVariables']
+
+    assert sorted(sheet_names) == sorted(required_sheet_names)
+
+    ws1 = workbook.sheet_by_name('IndependentVariables')
+
+    ivs = [i for i in independent_variables(ws1) ]
+    
+    def var_data(v):
+        return {
+            "variable_name": v[0],
+            "variable_description": v[1]
+            }
+    def iv_metadata():
+        for iv in ivs:
+            yield var_data(iv)
+
+    iv_metadata = [ i for i in iv_metadata() ]
+
+    ws2 = workbook.sheet_by_name('RegressionResultSet')
+
+    rrs = rrs_metadata(ws2)
+    dv = (rrs["dependent_variable_name"], rrs["dependent_variable_description"])
+
+    model = {
+        "model_name": rrs["model_name"],
+        "model_type": rrs["regression_type"],
+        "goodness_of_fit": rrs["r_squared"],
+        "sample_size": rrs["sample_size"]
+        }
+    
+    effects = [e for e in get_effects(model, ivs)]
+
+    data = {
+        "regression_result_set": { 
+            "dependent_variable": var_data(dv),
+            "independent_variables": iv_metadata,
+            "effects": effects
+            }
+        }
+    print json.dumps(data, indent=2)
+
+
+if __name__ == '__main__':
+    run()
