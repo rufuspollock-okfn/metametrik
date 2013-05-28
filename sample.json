@@ -1,0 +1,32 @@
+{
+  "regression_result_set": {
+    "independent_variables": [
+      {
+        "variable_description": "pupil / teacher ratio", 
+        "variable_name": "PupilTeach"
+      }, 
+      {
+        "variable_description": "size of class", 
+        "variable_name": "ClassN"
+      }
+    ], 
+    "effects": [
+      {
+        "independent_variable": "PupilTeach", 
+        "model_name": "Table 3 in Krumhanzl", 
+        "standard_error": 2.5, 
+        "significance": -10.5
+      }, 
+      {
+        "independent_variable": "ClassN", 
+        "model_name": "Table 3 in Krumhanzl", 
+        "standard_error": null, 
+        "significance": null
+      }
+    ], 
+    "dependent_variable": {
+      "variable_description": "Job performance after school", 
+      "variable_name": "Performance"
+    }
+  }
+}
