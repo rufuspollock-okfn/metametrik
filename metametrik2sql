@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+import json
+import psycopg2
+import sys
+
+def tuple_from_frag(frag, keys):
+    deref = lambda i: frag[i]
+    return tuple(map(deref, keys))
+
+def get_var(frag):
+    return tuple_from_frag(
+        frag, 
+        ["variable_name", "variable_description"]
+        )
+
+def get_model(frag):
+    return tuple_from_frag(
+        frag,
+        ["model_type", "sample_size", "model_name", "goodness_of_fit"]
+        )
+
+def get_effect(frag):
+    return tuple_from_frag(
+        frag,
+        ["independent_variable", "model_name", "standard_error", "significance"]
+        )
+
+def check_effect(e, models, ivs):
+    iv_names = [iv[0] for iv in ivs]
+    model_names = [m[2] for m in models]
+
+    assert e[0] in iv_names
+    assert e[1] in model_names
+
+def save(dv, ivs, models, effects):
+    db = psycopg2.connect(database="metametrik")
+
+    c = db.cursor()
+
+    def save_var(var):
+        print var
+        sql = 'insert into var (name, description) values (%s, %s) returning var_id'
+        c.execute(sql, var)
+        return c.fetchone()[0]
+
+    def save_result_set(dv_id):
+        sql = 'insert into result_set (dependent_var) values (%s) returning rs_id'
+        c.execute(sql, (dv_id,))
+        return c.fetchone()[0]
+
+    def save_model(model):
+        # fixme
+        x = (model[2], model[1], model[2], model[3])
+        sql = 'insert into model (name, sample_size, description, r_squared) values (%s, %s, %s, %s) returning model_id'
+        c.execute(sql, x)
+        return c.fetchone()[0]
+
+    def save_effect(e):
+        sql = 'insert into effect (model_id, var_id, coefficient, standard_error) values (%s, %s, %s, %s) returning id'
+        c.execute(sql, e)
+        return c.fetchone()[0]
+
+    dv_id = save_var(dv)
+
+    for var in ivs:
+        save_var(var)
+
+    save_result_set(dv_id)
+
+    for model in models:
+        save_model(model)
+
+    for effect in effects:
+        save_effect(effect)
+
+    db.commit()
+
+def run():
+    data = json.load(sys.stdin)["regression_result_set"]
+
+    dv = get_var(data["dependent_variable"])
+
+    models = [ get_model(m) for m in data["models"] ]
+
+    ivs = [ get_var(iv) for iv in data["independent_variables"] ]
+
+    effects = [ get_effect(e) for e in data["effects"] ]
+    [ check_effect(e, models, ivs) for e in effects ]
+
+    save(dv, ivs, models, effects)
+
+if __name__ == '__main__':
+    run()
