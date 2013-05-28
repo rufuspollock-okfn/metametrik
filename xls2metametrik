@@ -85,7 +85,8 @@ def run():
         "regression_result_set": { 
             "dependent_variable": var_data(dv),
             "independent_variables": iv_metadata,
-            "effects": effects
+            "effects": effects,
+            "models": [ model ]
             }
         }
     print json.dumps(data, indent=2)

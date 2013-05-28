@@ -1,5 +1,13 @@
 {
   "regression_result_set": {
+    "models": [
+      {
+        "model_type": "OLS", 
+        "sample_size": 1324.0, 
+        "model_name": "Table 3 in Krumhanzl", 
+        "goodness_of_fit": 0.9
+      }
+    ], 
     "independent_variables": [
       {
         "variable_description": "pupil / teacher ratio", 
