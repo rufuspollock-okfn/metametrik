@@ -21,5 +21,6 @@ create table effect (
 	   model_id integer not null references model(model_id),
 	   var_id integer not null references var(var_id),	
 	   coefficient real not null,
-	   standard_error real not null
+	   standard_error real not null,
+	   unique(model_id, var_id)
 );
